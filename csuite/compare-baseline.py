@@ -34,7 +34,7 @@ v8_benchmarks = ["V8", "Octane", "Richards", "DeltaBlue", "Crypto",
                  "NavierStokes", "PdfJS", "Mandreel", "MandreelLatency",
                  "Gameboy", "CodeLoad", "Box2D", "zlib", "Typescript"]
 
-suite_names = ["V8", "Octane", "Kraken-Orig", "Kraken-Once", "Kraken",
+suite_names = ["V8", "JetStream", "Octane", "Kraken-Orig", "Kraken-Once", "Kraken",
                "SunSpider", "SunSpider-Once", "SunSpider-Orig"]
 
 def ColorText(opts, text):
@@ -123,7 +123,7 @@ def ProcessOneResultLine(opts, suite, testname, time, sigma, num, baselines):
                 (base_color, testname, base_color, time))
   else:
     sigma_string = NormalizedSigmaToString(sigma / time)
-    line_out = ("%s%40s$RESET: %s%8.1f$RESET %s" %
+    line_out = ("%s%40s$RESET: %s%8.3f$RESET %s" %
                 (base_color, testname, base_color, time, sigma_string))
   for baseline in baselines:
     raw_score = ""
@@ -136,16 +136,17 @@ def ProcessOneResultLine(opts, suite, testname, time, sigma, num, baselines):
           found = True
           raw_score_num = float(item[1])
           raw_sigma_num = float(item[2])
-          raw_score = "%7.1f" % raw_score_num
+          raw_score = "%7.3f" % raw_score_num
           compare_num = 0
           compare_score = ""
           percent_color = ""
-          if testname in v8_benchmarks:
+          if not opts.time:
+          # if testname in v8_benchmarks:
             compare_num = 100*time/raw_score_num - 100
           else:
             compare_num = 100*raw_score_num/time - 100
           if abs(compare_num) > 0.1:
-            compare_score = "%3.1f" % (compare_num)
+            compare_score = "%3.2f" % (compare_num)
             z = ComputeZ(raw_score_num, raw_sigma_num, time, num)
             p = ComputeProbability(z)
             percent_color = PercentColor(compare_num, p)
@@ -252,6 +253,10 @@ if __name__ == '__main__':
   parser.add_option("-b", "--baselines", dest="baselines",
                     help="Specifies a directory of baseline files to "\
 "compare against.")
+  parser.add_option("-t", "--time", action="store_true",
+                    dest="time", default=False,
+                    help="Indicate the result is used time other than "\
+"score.")
   parser.add_option("-n", "--no-color", action="store_true",
                     dest="no_color", default=False,
                     help="Generates output without escape codes that "\

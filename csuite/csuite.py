@@ -56,8 +56,8 @@ if __name__ == '__main__':
   suite = args[0]
   mode = args[1]
 
-  if suite not in ['octane', 'sunspider', 'kraken']:
-    print('Suite must be octane, sunspider or kraken. Aborting.')
+  if suite not in ['octane', 'jetstream', 'sunspider', 'kraken']:
+    print('Suite must be octane, jetstream, sunspider or kraken. Aborting.')
     sys.exit(1)
 
   if mode != 'baseline' and mode != 'compare':
@@ -103,6 +103,10 @@ if __name__ == '__main__':
     runs = 10
     suite_path = os.path.join(benchmark_path, "octane")
     cmd = "run.js"
+  elif suite == "jetstream":
+    runs = 5
+    suite_path = os.path.join(benchmark_path, "JetStream2.0")
+    cmd = "-m all_setup.js cli.js"
   elif suite == "kraken":
     runs = 80
     suite_path = os.path.join(benchmark_path, "kraken")
@@ -158,7 +162,10 @@ if __name__ == '__main__':
     print("Run %s again with compare mode to see results." % suite)
   else:
     print("Wrote %s." % output_file_compare)
-    cmdline = "python %s  %s -f %s" % (compare_baseline_py_path, output_file, output_file_compare)
+    if suite == "octane" or suite == "jetstream":
+      cmdline = "python %s  %s -f %s" % (compare_baseline_py_path, output_file, output_file_compare)
+    else:
+      cmdline = "python %s  %s -t -f %s" % (compare_baseline_py_path, output_file, output_file_compare)
     if opts.verbose:
       print("Spawning subprocess: %s." % cmdline)
     return_code = subprocess.call(cmdline, shell=True, cwd=suite_path)

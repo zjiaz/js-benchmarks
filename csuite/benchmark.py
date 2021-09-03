@@ -34,14 +34,14 @@ class BenchmarkSuite(object):
     self.sigmaresult = {}
     self.numresult = {}
     self.kClassicScoreSuites = ["SunSpider", "Kraken"]
-    self.kGeometricScoreSuites = ["Octane"]
+    self.kGeometricScoreSuites = ["Octane", "JetStream"]
 
 
   def RecordResult(self, test, result):
     if test not in self.tests:
       self.tests += [test]
       self.results[test] = []
-    self.results[test] += [int(result)]
+    self.results[test] += [float(result)]
 
   def ThrowAwayWorstResult(self, results):
     if len(results) <= 1: return
@@ -55,7 +55,7 @@ class BenchmarkSuite(object):
       results = self.results[test]
       results.sort()
       self.ThrowAwayWorstResult(results)
-      mean = sum(results) * 1.0 / len(results)
+      mean = sum(results) * 1.00 / len(results)
       self.avgresult[test] = mean
       sigma_divisor = len(results) - 1
       if sigma_divisor == 0:
@@ -64,8 +64,8 @@ class BenchmarkSuite(object):
           sum((x - mean) ** 2 for x in results) / sigma_divisor)
       self.numresult[test] = len(results)
       if opts.verbose:
-        if not test in ["Octane"]:
-          print("%s,%.1f,%.2f,%d" %
+        if not test in ["Octane", "JetStream"]:
+          print("%s,%.3f,%.2f,%d" %
               (test, self.avgresult[test],
                self.sigmaresult[test], self.numresult[test]))
 
@@ -83,6 +83,8 @@ class BenchmarkSuite(object):
     found_name = ''
     for s in self.avgresult.keys():
       if re.search("^Octane", s):
+        found_name = s
+      elif re.search("^JetStream", s):
         found_name = s
         break
 
@@ -129,6 +131,8 @@ class BenchmarkRunner(object):
     teststr = opts.command.lower() + " " + self.current_directory.lower()
     if teststr.find('octane') >= 0:
       suite = 'Octane'
+    elif teststr.find('jetstream') >= 0:
+      suite = 'JetStream'
     elif teststr.find('sunspider') >= 0:
       suite = 'SunSpider'
     elif teststr.find('kraken') >= 0:
@@ -154,12 +158,20 @@ class BenchmarkRunner(object):
       return (None, None)
 
     # Kraken or Sunspider?
+    print(line)
     g = re.match("(?P<test_name>\w+(-\w+)*)\(RunTime\): (?P<score>\d+) ms\.", \
         line)
     if g == None:
+      # JetStream?
+      g = re.match("(?P<test_name>[a-zA-Z0-9-.]+):.*Score: (?P<score>[0-9\.]+)", line)
+      if g != None:
+        return (g.group('test_name'), g.group('score'))
       # Octane?
       g = re.match("(?P<test_name>\w+): (?P<score>\d+)", line)
       if g == None:
+        g = re.match("Total Score: *(?P<score>[0-9\.]+)", line)
+        if g != None:
+          return ('JetStream', g.group('score'))
         g = re.match("Score \(version [0-9]+\): (?P<score>\d+)", line)
         if g != None:
           return ('Octane', g.group('score'))
@@ -182,7 +194,7 @@ class BenchmarkRunner(object):
 
     suite.ProcessResults(self.opts)
     suite.ComputeScore()
-    print(("%s,%.1f,%.2f,%d " %
+    print(("%s,%.3f,%.2f,%d " %
         (suite.name, suite.score, suite.sigma, suite.num)), end='')
     if self.opts.verbose:
       print("")
