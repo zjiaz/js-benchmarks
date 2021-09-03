@@ -1,0 +1,6 @@
+/_*
+/perf.data*
+jit-*.dump
+turbo*.cfg
+turbo*.dot
+turbo*.json
